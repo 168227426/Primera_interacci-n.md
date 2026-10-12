@@ -1,136 +1,658 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-slate-950">
+<html lang="es" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fotodog - La Red Social Canina Exclusiva</title>
-    
-    <!-- Supabase JS Client CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            400: '#a78bfa',
-                            500: '#8b5cf6',
-                            600: '#7c3aed',
-                            700: '#6d28d9',
-                            900: '#3b0764',
-                            950: '#1e0038',
-                        },
-                        mint: {
-                            300: '#6ee7b7',
-                            400: '#34d399',
-                            500: '#10b981',
-                        }
-                    }
-                }
-            }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FotoDog - La Comunidad Social de Mascotas</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#f59e0b', 600: '#d97706' }, // Ámbar vibrante
+            mint: { 400: '#34d399' }
+          }
         }
-    </script>
-    <link rel="stylesheet" href="styles.css">
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Supabase JS Client UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="h-full flex flex-col font-sans text-slate-100 antialiased bg-slate-950">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-brand-500 selection:text-white">
 
-    <!-- ==================== MODAL DE AUTENTICACIÓN ==================== -->
-    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xl p-4 overflow-y-auto">
-        <div class="bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-brand-500/30 p-8 text-center relative">
-            <div class="inline-flex p-4 bg-brand-500/10 rounded-3xl mb-3 border border-brand-500/30">
-                <i data-lucide="dog" class="w-12 h-12 text-mint-400"></i>
-            </div>
-            <h1 class="text-3xl font-extrabold tracking-tight text-white mb-1">Fotodog</h1>
-            <p class="text-slate-400 text-sm mb-6">La red social canina exclusiva de publicaciones diarias</p>
+  <!-- ==================== PANTALLA DE AUTENTICACIÓN ==================== -->
+  <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-brand-500/30 w-full max-w-md rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl"></div>
+      
+      <div class="text-center mb-6">
+        <h1 class="text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2">
+          🐾 FotoDog <span class="text-xs bg-brand-500/20 text-brand-400 px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">Cupo Limitado: 10K</span>
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">La red social exclusiva para consentidos de cuatro patas.</p>
+      </div>
 
-            <!-- Pestañas -->
-            <div class="flex bg-slate-950 p-1.5 rounded-2xl mb-6 border border-slate-800">
-                <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-brand-600 text-white shadow-lg transition-all">Iniciar Sesión</button>
-                <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-400 hover:text-white transition-all">Registrarse</button>
-            </div>
+      <!-- Pestañas Auth -->
+      <div class="flex bg-slate-950 p-1.5 rounded-2xl mb-6 border border-slate-800">
+        <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-sm shadow-md transition">Ingresar</button>
+        <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold text-sm transition">Crear Cuenta</button>
+      </div>
 
-            <!-- Login -->
-            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4 text-left">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Correo Electrónico</label>
-                    <input type="email" id="login-email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500" placeholder="tucorreo@dominio.com">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Contraseña</label>
-                    <input type="password" id="login-password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500" placeholder="••••••••">
-                </div>
-                <button type="submit" class="w-full mt-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all">Entrar a la Jauría</button>
-            </form>
-
-            <!-- Registro -->
-            <form id="form-register" onsubmit="handleRegister(event)" class="space-y-3 text-left hidden">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Nombre del Perro</label>
-                    <input type="text" id="reg-nombre" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500" placeholder="Ej. Firulais">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Username (@)</label>
-                    <input type="text" id="reg-username" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500" placeholder="@firulais">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Raza</label>
-                    <input type="text" id="reg-raza" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500" placeholder="Ej. Beagle">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Correo Electrónico</label>
-                    <input type="email" id="reg-email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500" placeholder="tucorreo@dominio.com">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Contraseña</label>
-                    <input type="password" id="reg-password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500" placeholder="••••••••">
-                </div>
-                <button type="submit" class="w-full mt-2 bg-mint-500 hover:bg-mint-400 text-slate-950 font-bold py-3 px-4 rounded-xl shadow-lg transition-all">Registrar a mi Perro</button>
-            </form>
+      <!-- Formulario Login -->
+      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Correo Electrónico</label>
+          <input type="email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
         </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Contraseña</label>
+          <input type="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+        </div>
+        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition">Iniciar Sesión</button>
+      </form>
+
+      <!-- Formulario Registro -->
+      <form id="form-register" onsubmit="handleRegister(event)" class="space-y-3.5 hidden">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre de la Mascota</label>
+          <input id="reg-dog-name" type="text" required placeholder="Ej. Firulais" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Usuario (@alias)</label>
+          <input id="reg-username" type="text" required placeholder="Ej. @firulais_cl" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Raza o Estilo</label>
+          <input id="reg-breed" type="text" required placeholder="Ej. Golden Retriever" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Correo Electrónico (Humano)</label>
+          <input id="reg-email" type="email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Contraseña</label>
+          <input id="reg-password" type="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+        </div>
+        <button type="submit" class="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition mt-2">Registrar mi Perrito</button>
+      </form>
+
+      <div class="mt-6 text-center">
+        <button onclick="guestAccess()" class="text-xs text-slate-400 hover:text-brand-400 underline font-semibold transition">Explorar como invitado</button>
+      </div>
     </div>
+  </div>
 
-    <!-- ==================== CONTENIDO PRINCIPAL ==================== -->
-    <div class="flex-1 flex flex-col max-w-2xl w-full mx-auto p-4 space-y-6">
-        <!-- Header -->
-        <header class="flex items-center justify-between bg-slate-900/80 p-4 rounded-3xl border border-slate-800">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-brand-600 rounded-2xl"><i data-lucide="dog" class="w-6 h-6 text-white"></i></div>
-                <div>
-                    <h1 class="font-black text-lg text-white">FOTODOG</h1>
-                    <span id="header-username" class="text-xs text-mint-400 font-semibold">@perrito</span>
-                </div>
-            </div>
-            <button onclick="logout()" class="px-4 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-xs font-bold rounded-xl transition-all">Cerrar Sesión</button>
-        </header>
-
-        <!-- Panel de Carga de Foto Diaria -->
-        <div class="bg-slate-900/80 p-5 rounded-3xl border border-slate-800 space-y-3">
-            <div class="flex justify-between text-xs font-bold text-slate-400">
-                <span>Límite diario:</span>
-                <span class="text-mint-400"><span id="daily-count-num">0</span> / 2 fotos hoy</span>
-            </div>
-            <div id="upload-box" class="space-y-3">
-                <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="previewSelectedImage(event)">
-                <button onclick="document.getElementById('photo-input').click()" class="w-full py-3 bg-slate-950 border border-dashed border-brand-500/50 hover:border-mint-400 text-xs font-bold rounded-xl transition-all">Seleccionar Imagen</button>
-                <textarea id="photo-caption" rows="2" placeholder="Escribe algo sobre tu perrito hoy..." class="w-full bg-slate-950 border border-slate-800 p-3 text-xs rounded-xl focus:outline-none focus:border-brand-500 text-white"></textarea>
-                <button onclick="uploadDailyPhoto()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-xs font-bold rounded-xl text-white transition-all">Publicar en el Muro</button>
-            </div>
-            <div id="upload-blocked-msg" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 text-xs font-bold text-center">
-                🔒 ¡Has alcanzado el límite de 2 fotos por hoy!
-            </div>
+  <!-- ==================== LAYOUT PRINCIPAL ==================== -->
+  <div class="max-w-7xl mx-auto flex min-h-screen">
+    
+    <!-- Barra Lateral Izquierda (Navegación) -->
+    <aside class="w-72 border-r border-slate-800/80 p-6 hidden md:flex flex-col justify-between sticky top-0 h-screen">
+      <div class="space-y-8">
+        <div class="flex items-center gap-3 px-2">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-amber-600 flex items-center justify-center shadow-lg shadow-brand-500/20 text-white font-black text-xl">🐶</div>
+          <div>
+            <h2 class="text-lg font-black tracking-wider text-white">FOTODOG</h2>
+            <p class="text-xs text-brand-400 font-semibold">Comunidad Social 🐾</p>
+          </div>
         </div>
 
-        <!-- Muro de Publicaciones -->
+        <nav class="space-y-2">
+          <button id="nav-muro" onclick="switchTab('muro')" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-amber-600 text-white font-extrabold text-sm shadow-lg shadow-brand-600/30 transition">
+            <i data-lucide="image" class="w-5 h-5"></i> Muro de Momentos
+          </button>
+          <button id="nav-vip" onclick="switchTab('vip')" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-300 hover:bg-brand-500/10 hover:text-white font-bold text-sm transition">
+            <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i> Socios VIP & Patrocinio
+          </button>
+          <button id="nav-profile" onclick="switchTab('profile')" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-300 hover:bg-brand-500/10 hover:text-white font-bold text-sm transition">
+            <i data-lucide="user" class="w-5 h-5"></i> Mi Perfil Canino
+          </button>
+        </nav>
+      </div>
+
+      <!-- Tarjeta inferior de Perfil / Logout -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <img id="header-avatar" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-full object-cover ring-2 ring-brand-500">
+          <div class="truncate">
+            <p id="header-username" class="text-xs font-black text-white truncate">Invitado</p>
+            <p class="text-[10px] text-mint-400 font-semibold">● En Línea</p>
+          </div>
+        </div>
+        <button onclick="logout()" title="Cerrar Sesión" class="p-2 text-slate-400 hover:text-red-400 transition">
+          <i data-lucide="log-out" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Contenido Central -->
+    <main class="flex-1 max-w-2xl mx-auto px-4 py-8 space-y-8 pb-24 md:pb-8">
+
+      <!-- ==================== SECCIÓN MURO / FEED ==================== -->
+      <section id="sec-muro" class="space-y-6">
+        
+        <!-- Caja para publicar foto (Estilo Fotolog/Instagram moderno) -->
+        <div class="bg-slate-900/80 backdrop-blur-xl border border-brand-500/20 rounded-3xl p-6 shadow-2xl space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 font-bold text-xs">📸</div>
+            <h2 class="text-sm font-black uppercase tracking-wider text-white">Publica el momento de tu mascota</h2>
+          </div>
+          
+          <div id="upload-blocked-msg" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs p-3 rounded-xl font-bold text-center">
+            ⚠️ Has alcanzado tu límite diario de publicaciones. ¡Vuelve mañana!
+          </div>
+
+          <div id="upload-box" class="space-y-4">
+            <textarea id="photo-caption" rows="2" placeholder="Escribe algo divertido sobre esta foto..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm text-slate-200 placeholder-slate-500 focus:border-brand-500 focus:outline-none transition"></textarea>
+            
+            <div class="flex items-center justify-between pt-2">
+              <label class="cursor-pointer bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition">
+                <i data-lucide="upload" class="w-4 h-4 text-brand-400"></i> Seleccionar Imagen
+                <input id="photo-input" type="file" accept="image/*" onchange="previewSelectedImage(event)" class="hidden">
+              </label>
+
+              <button onclick="uploadDailyPhoto()" class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-amber-500 hover:from-brand-500 hover:to-brand-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-brand-600/30 transition">
+                Publicar Ahora
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenedor del Feed Dinámico -->
         <div id="muro-feed" class="space-y-6">
-            <!-- Carga dinámica -->
+          <!-- Las publicaciones se inyectarán aquí dinámicamente -->
         </div>
-    </div>
+      </section>
 
-    <script src="app.js"></script>
+      <!-- ==================== SECCIÓN SOCIOS VIP & RENTABILIDAD ==================== -->
+      <section id="sec-vip" class="space-y-6 hidden">
+        <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-brand-500/30 rounded-3xl p-8 shadow-2xl relative overflow-hidden text-center space-y-4">
+          <div class="w-16 h-16 bg-brand-500/20 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-inner">👑</div>
+          <h2 class="text-2xl font-black text-white">Membresía VIP FotoDog</h2>
+          <p class="text-slate-300 text-sm max-w-md mx-auto">Apoya el mantenimiento de la comunidad (límite de 10,000 socios) y desbloquea insignias doradas, subida ilimitada de fotos y prioridad en el muro general.</p>
+          
+          <div class="pt-4 flex flex-col sm:flex-row justify-center gap-4">
+            <button onclick="donateMercadoPago(3990)" class="px-6 py-3.5 bg-gradient-to-r from-brand-600 to-amber-500 text-white font-extrabold text-sm rounded-xl shadow-xl shadow-brand-600/20 hover:scale-105 transition">
+              ⭐ Patrocinio Mensual ($3.990 CLP)
+            </button>
+            <button onclick="donateMercadoPago(9990)" class="px-6 py-3.5 bg-slate-950 border border-brand-500 text-brand-400 font-extrabold text-sm rounded-xl hover:bg-brand-500/10 hover:scale-105 transition">
+              💎 Insignia Dorada Vitalicia ($9.990 CLP)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SECCIÓN PERFIL ==================== -->
+      <section id="sec-profile" class="space-y-6 hidden">
+        <div class="bg-slate-900/80 backdrop-blur-xl border border-brand-500/20 rounded-3xl p-8 shadow-2xl space-y-6">
+          <div class="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+            <img id="user-profile-img" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=300&auto=format&fit=crop&q=80" class="w-24 h-24 rounded-full object-cover ring-4 ring-brand-500 shadow-xl">
+            <div class="space-y-1">
+              <h2 id="user-dog-name" class="text-2xl font-black text-white">Cargando...</h2>
+              <p id="user-dog-username" class="text-brand-400 font-bold text-sm">@usuario</p>
+              <p id="user-dog-breed" class="text-slate-400 text-xs font-semibold">Raza: Cargando...</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/60 text-center">
+              <p class="text-xs text-slate-400 font-bold uppercase">Publicaciones Hoy</p>
+              <p id="daily-count-num" class="text-2xl font-black text-white mt-1">0 / 2</p>
+            </div>
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/60 text-center">
+              <p class="text-xs text-slate-400 font-bold uppercase">Estado de Cuenta</p>
+              <p class="text-sm font-black text-mint-400 mt-2">Socio Verificado 🐾</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Barra de Navegación Inferior (Móvil) -->
+  <div class="md:hidden fixed bottom-0 inset-x-0 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800 p-3 flex justify-around items-center z-40">
+    <button onclick="switchTab('muro')" class="p-3 text-brand-400"><i data-lucide="image" class="w-6 h-6"></i></button>
+    <button onclick="switchTab('vip')" class="p-3 text-slate-400"><i data-lucide="crown" class="w-6 h-6"></i></button>
+    <button onclick="switchTab('profile')" class="p-3 text-slate-400"><i data-lucide="user" class="w-6 h-6"></i></button>
+  </div>
+
+  <!-- ==================== JAVASCRIPT PRINCIPAL ==================== -->
+  <script>
+    // Configuración de Supabase
+    const SUPABASE_URL = 'https://rymtixdqswlxvmtjbkiw.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_gS1AcjFnUXrkvs7zSJS6CA_13c3NwDk';
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentSessionUser = null;
+    let currentProfile = null;
+    let selectedImageFile = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      await checkSession();
+      await loadFeedFromSupabase();
+    });
+
+    function fechaLocalHoy() {
+      const ahora = new Date();
+      const offset = ahora.getTimezoneOffset();
+      const fechaLocal = new Date(ahora.getTime() - offset * 60 * 1000);
+      return fechaLocal.toISOString().split('T')[0];
+    }
+
+    // ==================== SESIÓN Y PERFIL ====================
+    async function checkSession() {
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      
+      if (session) {
+        currentSessionUser = session.user;
+        await fetchProfile(currentSessionUser.id);
+        document.getElementById('auth-screen').classList.add('hidden');
+        switchTab('muro');
+      } else {
+        document.getElementById('auth-screen').classList.remove('hidden');
+      }
+    }
+
+    async function fetchProfile(userId) {
+      const { data: perfil, error } = await supabaseClient
+        .from('perfiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error al cargar perfil:', error);
+        return;
+      }
+
+      currentProfile = perfil;
+      const hoy = fechaLocalHoy();
+
+      const { count } = await supabaseClient
+        .from('publicaciones')
+        .select('*', { count: 'exact', head: true })
+        .eq('usuario_id', userId)
+        .eq('fecha', hoy);
+
+      currentProfile.dailyPhotosCount = count || 0;
+      updateProfileUI();
+    }
+
+    // ==================== AUTH HANDLERS ====================
+    async function handleLogin(e) {
+      e.preventDefault();
+      const inputs = e.target.querySelectorAll('input');
+      const email = inputs[0].value.trim();
+      const password = inputs[1].value.trim();
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        alert('Error al iniciar sesión: ' + error.message);
+        return;
+      }
+
+      currentSessionUser = data.user;
+      await fetchProfile(currentSessionUser.id);
+      document.getElementById('auth-screen').classList.add('hidden');
+      switchTab('muro');
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      
+      const dogName = document.getElementById('reg-dog-name').value.trim();
+      const usernameInput = document.getElementById('reg-username').value.trim();
+      const breed = document.getElementById('reg-breed').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+
+      const username = usernameInput.startsWith('@') ? usernameInput : '@' + usernameInput;
+
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nombre_perro: dogName,
+            username: username,
+            raza: breed
+          }
+        }
+      });
+
+      if (error) {
+        alert('Error en el registro: ' + error.message);
+        return;
+      }
+
+      alert('¡Perrito registrado con éxito! Ya puedes iniciar sesión.');
+      switchAuthTab('login');
+    }
+
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      currentSessionUser = null;
+      currentProfile = null;
+      selectedImageFile = null;
+      document.getElementById('auth-screen').classList.remove('hidden');
+      switchAuthTab('login');
+    }
+
+    // ==================== PUBLICACIÓN DE FOTOS ====================
+    function previewSelectedImage(event) {
+      const file = event.target.files[0];
+      if (file) selectedImageFile = file;
+    }
+
+    async function uploadDailyPhoto() {
+      if (!currentProfile) {
+        alert('Debes iniciar sesión.');
+        return;
+      }
+
+      if (currentProfile.dailyPhotosCount >= 2) {
+        alert('¡Has alcanzado el límite de 2 fotos para el día de hoy!');
+        return;
+      }
+
+      if (!selectedImageFile) {
+        alert('Por favor selecciona una imagen primero.');
+        return;
+      }
+
+      const caption = document.getElementById('photo-caption').value.trim() || '¡Momento del día!';
+      const fileExt = selectedImageFile.name.split('.').pop();
+      const fileName = `${currentProfile.id}_${Date.now()}.${fileExt}`;
+      const filePath = `muro/${fileName}`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('fotodog-fotos')
+        .upload(filePath, selectedImageFile);
+
+      if (uploadError) {
+        alert('Error al subir imagen: ' + uploadError.message);
+        return;
+      }
+
+      const { data } = supabaseClient.storage
+        .from('fotodog-fotos')
+        .getPublicUrl(filePath);
+
+      const hoy = fechaLocalHoy();
+      const { error: dbError } = await supabaseClient
+        .from('publicaciones')
+        .insert([
+          {
+            usuario_id: currentProfile.id,
+            foto_url: data.publicUrl,
+            comentario: caption,
+            fecha: hoy
+          }
+        ]);
+
+      if (dbError) {
+        alert('Error al guardar publicación: ' + dbError.message);
+        return;
+      }
+
+      alert('¡Foto publicada con éxito!');
+      document.getElementById('photo-caption').value = '';
+      document.getElementById('photo-input').value = '';
+      selectedImageFile = null;
+      await fetchProfile(currentProfile.id);
+      await loadFeedFromSupabase();
+      switchTab('muro');
+    }
+
+    // ==================== CARGAR FEED (LIKES Y COMENTARIOS) ====================
+    async function loadFeedFromSupabase() {
+      // 1. Cargar publicaciones con perfiles
+      const { data: posts, error } = await supabaseClient
+        .from('publicaciones')
+        .select(`
+          id,
+          foto_url,
+          comentario,
+          creado_el,
+          perfiles (
+            id,
+            nombre_perro,
+            username,
+            raza,
+            avatar_url
+          )
+        `)
+        .order('creado_el', { ascending: false });
+
+      if (error) {
+        console.error('Error cargando feed:', error);
+        return;
+      }
+
+      const feedContainer = document.getElementById('muro-feed');
+      feedContainer.innerHTML = '';
+
+      if (!posts || posts.length === 0) {
+        feedContainer.innerHTML = `
+          <div class="bg-slate-900/80 border border-brand-500/20 rounded-3xl p-8 text-center">
+            <p class="text-slate-300 font-bold">Todavía no hay fotos publicadas en el muro.</p>
+          </div>
+        `;
+        return;
+      }
+
+      for (const post of posts) {
+        if (!post.perfiles) continue;
+
+        // Contar likes y verificar si el usuario actual dio like
+        const { count: likesCount } = await supabaseClient
+          .from('likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('publicacion_id', post.id);
+
+        let userLiked = false;
+        if (currentProfile) {
+          const { data: myLike } = await supabaseClient
+            .from('likes')
+            .select('id')
+            .eq('publicacion_id', post.id)
+            .eq('usuario_id', currentProfile.id)
+            .maybeSingle();
+          if (myLike) userLiked = true;
+        }
+
+        // Cargar comentarios
+        const { data: comments } = await supabaseClient
+          .from('comentarios')
+          .select(`
+            id,
+            contenido,
+            perfiles (
+              username
+            )
+          `)
+          .eq('publicacion_id', post.id)
+          .order('creado_el', { ascending: true });
+
+        const avatar = post.perfiles.avatar_url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=150&auto=format&fit=crop&q=80';
+
+        let commentsHtml = '';
+        if (comments && comments.length > 0) {
+          comments.forEach(c => {
+            if (c.perfiles) {
+              commentsHtml += `<p class="text-xs text-slate-300"><strong class="text-brand-400">${c.perfiles.username}:</strong> ${c.contenido}</p>`;
+            }
+          });
+        }
+
+        const postHtml = `
+          <article class="bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-brand-500/20 shadow-2xl overflow-hidden">
+            <div class="p-4 flex items-center justify-between bg-slate-950/40">
+              <div class="flex items-center gap-3">
+                <img src="${avatar}" class="w-11 h-11 rounded-full object-cover ring-2 ring-brand-500">
+                <div>
+                  <h3 class="text-sm font-black text-white leading-tight">${post.perfiles.nombre_perro}</h3>
+                  <p class="text-xs text-brand-300 font-semibold">${post.perfiles.username} • ${post.perfiles.raza}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="relative aspect-square bg-slate-950">
+              <img src="${post.foto_url}" class="w-full h-full object-cover">
+            </div>
+
+            <div class="p-5 space-y-4">
+              <div class="flex items-center gap-4">
+                <button onclick="toggleLike('${post.id}')" class="flex items-center gap-1.5 text-xs font-black ${userLiked ? 'text-red-500' : 'text-slate-300'} hover:scale-105 transition">
+                  ❤️ <span>${likesCount || 0}</span> Me gusta
+                </button>
+              </div>
+
+              <p class="text-sm text-slate-200 font-medium leading-relaxed">
+                <strong class="text-mint-400">${post.perfiles.username}:</strong> ${post.comentario || ''}
+              </p>
+
+              <!-- Comentarios -->
+              <div class="space-y-1.5 pt-2 border-t border-slate-800/80 max-h-32 overflow-y-auto">
+                ${commentsHtml || '<p class="text-xs text-slate-500 italic">Sin comentarios aún. ¡Sé el primero!</p>'}
+              </div>
+
+              <!-- Input Comentar -->
+              <div class="flex gap-2 pt-2">
+                <input id="comment-input-${post.id}" type="text" placeholder="Escribe un comentario respetuoso..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-brand-500 focus:outline-none">
+                <button onclick="addComment('${post.id}')" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-extrabold transition">Comentar</button>
+              </div>
+            </div>
+          </article>
+        `;
+        feedContainer.insertAdjacentHTML('beforeend', postHtml);
+      }
+      lucide.createIcons();
+    }
+
+    async function toggleLike(postId) {
+      if (!currentProfile) {
+        alert('Debes iniciar sesión para dar Me Gusta.');
+        return;
+      }
+
+      const { data: existingLike } = await supabaseClient
+        .from('likes')
+        .select('id')
+        .eq('publicacion_id', postId)
+        .eq('usuario_id', currentProfile.id)
+        .maybeSingle();
+
+      if (existingLike) {
+        await supabaseClient.from('likes').delete().eq('id', existingLike.id);
+      } else {
+        await supabaseClient.from('likes').insert([{ publicacion_id: postId, usuario_id: currentProfile.id }]);
+      }
+      await loadFeedFromSupabase();
+    }
+
+    async function addComment(postId) {
+      if (!currentProfile) {
+        alert('Debes iniciar sesión para comentar.');
+        return;
+      }
+
+      const input = document.getElementById(`comment-input-${postId}`);
+      const text = input.value.trim();
+      if (!text) return;
+
+      const { error } = await supabaseClient
+        .from('comentarios')
+        .insert([{ publicacion_id: postId, usuario_id: currentProfile.id, contenido: text }]);
+
+      if (error) {
+        alert('Error al comentar: ' + error.message);
+        return;
+      }
+
+      input.value = '';
+      await loadFeedFromSupabase();
+    }
+
+    // ==================== UI & NAVEGACIÓN ====================
+    function updateProfileUI() {
+      if (!currentProfile) return;
+      const avatar = currentProfile.avatar_url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=300&auto=format&fit=crop&q=80';
+
+      document.getElementById('user-dog-name').innerText = currentProfile.nombre_perro;
+      document.getElementById('user-dog-username').innerText = currentProfile.username;
+      document.getElementById('user-dog-breed').innerText = currentProfile.raza;
+      document.getElementById('header-avatar').src = avatar;
+      document.getElementById('header-username').innerText = currentProfile.username;
+      document.getElementById('user-profile-img').src = avatar;
+      document.getElementById('daily-count-num').innerText = `${currentProfile.dailyPhotosCount} / 2`;
+
+      if (currentProfile.dailyPhotosCount >= 2) {
+        document.getElementById('upload-box').classList.add('hidden');
+        document.getElementById('upload-blocked-msg').classList.remove('hidden');
+      } else {
+        document.getElementById('upload-box').classList.remove('hidden');
+        document.getElementById('upload-blocked-msg').classList.add('hidden');
+      }
+    }
+
+    function switchTab(tabId) {
+      if (tabId === 'profile' && !currentSessionUser) {
+        document.getElementById('auth-screen').classList.remove('hidden');
+        return;
+      }
+
+      const sections = ['muro', 'vip', 'profile'];
+      sections.forEach(sec => {
+        const el = document.getElementById('sec-' + sec);
+        const nav = document.getElementById('nav-' + sec);
+        if (sec === tabId) {
+          el.classList.remove('hidden');
+          if (nav) nav.className = "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-amber-600 text-white font-extrabold text-sm shadow-lg shadow-brand-600/30 transition";
+        } else {
+          el.classList.add('hidden');
+          if (nav) nav.className = "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-300 hover:bg-brand-500/10 hover:text-white font-bold text-sm transition";
+        }
+      });
+    }
+
+    function switchAuthTab(type) {
+      const tabLogin = document.getElementById('tab-login');
+      const tabReg = document.getElementById('tab-register');
+      const formLogin = document.getElementById('form-login');
+      const formReg = document.getElementById('form-register');
+
+      if (type === 'login') {
+        tabLogin.className = "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md transition";
+        tabReg.className = "flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white transition";
+        formLogin.classList.remove('hidden');
+        formReg.classList.add('hidden');
+      } else {
+        tabReg.className = "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md transition";
+        tabLogin.className = "flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white transition";
+        formReg.classList.remove('hidden');
+        formLogin.classList.add('hidden');
+      }
+    }
+
+    function guestAccess() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      switchTab('muro');
+    }
+
+    function donateMercadoPago(monto) {
+      alert(`Redirigiendo a pasarela segura para patrocinio VIP de $${monto.toLocaleString('es-CL')} CLP...`);
+    }
+  </script>
 </body>
 </html>
