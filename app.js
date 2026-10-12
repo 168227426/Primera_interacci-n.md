@@ -2,10 +2,7 @@
 const SUPABASE_URL = 'https://rymtixdqswlxvmtjbkiw.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gS1AcjFnUXrkvs7zSJS6CA_13c3NwDk';
 
-// El CDN expone un objeto global llamado "supabase".
-// No debemos declarar otra variable con el mismo nombre.
 const { createClient } = supabase;
-
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentSessionUser = null;
@@ -18,8 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadFeedFromSupabase();
 });
 
-// Devuelve la fecha de hoy según la zona horaria del navegador,
-// no UTC. Esto evita que el límite diario cambie a una hora incorrecta.
+// Devuelve la fecha local actual para controlar el límite diario
 function fechaLocalHoy() {
   const ahora = new Date();
   const offset = ahora.getTimezoneOffset();
@@ -60,23 +56,17 @@ async function fetchProfile(userId) {
 
   if (error) {
     console.error('Error al cargar perfil:', error);
-    alert('No se pudo cargar tu perfil: ' + error.message);
     return;
   }
 
   currentProfile = perfil;
-
   const hoy = fechaLocalHoy();
 
-  const { count, error: countError } = await supabaseClient
+  const { count } = await supabaseClient
     .from('publicaciones')
     .select('*', { count: 'exact', head: true })
     .eq('usuario_id', userId)
     .eq('fecha', hoy);
-
-  if (countError) {
-    console.error('Error al contar publicaciones:', countError);
-  }
 
   currentProfile.dailyPhotosCount = count || 0;
   updateProfileUI();
@@ -107,7 +97,7 @@ async function handleLogin(e) {
   switchTab('muro');
 }
 
-// ==================== REGISTRO ====================
+// ==================== REGISTRO AUTOMÁTICO ====================
 async function handleRegister(e) {
   e.preventDefault();
 
@@ -126,40 +116,21 @@ async function handleRegister(e) {
     ? usernameInput
     : '@' + usernameInput;
 
+  // El Trigger en Supabase intercepta esto y crea el perfil en la tabla 'perfiles' automáticamente
   const { data: authData, error: authError } = await supabaseClient.auth.signUp({
     email,
-    password
+    password,
+    options: {
+      data: {
+        nombre_perro: dogName,
+        username: username,
+        raza: breed
+      }
+    }
   });
 
   if (authError) {
     alert('Error en el registro: ' + authError.message);
-    return;
-  }
-
-  if (!authData.user) {
-    alert(
-      'Revisa tu correo electrónico para confirmar la cuenta. ' +
-      'Después podrás iniciar sesión.'
-    );
-    switchAuthTab('login');
-    return;
-  }
-
-  const userId = authData.user.id;
-
-  const { error: profileError } = await supabaseClient
-    .from('perfiles')
-    .insert([
-      {
-        id: userId,
-        nombre_perro: dogName,
-        username,
-        raza: breed
-      }
-    ]);
-
-  if (profileError) {
-    alert('Error al guardar el perfil canino: ' + profileError.message);
     return;
   }
 
@@ -182,7 +153,6 @@ async function logout() {
 // ==================== FOTO DIARIA ====================
 function previewSelectedImage(event) {
   const file = event.target.files[0];
-
   if (!file) return;
 
   if (!file.type.startsWith('image/')) {
@@ -224,7 +194,6 @@ async function uploadDailyPhoto() {
     .upload(filePath, selectedImageFile);
 
   if (uploadError) {
-    console.error('Error al subir imagen:', uploadError);
     alert('Error al subir imagen: ' + uploadError.message);
     return;
   }
@@ -248,7 +217,6 @@ async function uploadDailyPhoto() {
     ]);
 
   if (dbError) {
-    console.error('Error al guardar publicación:', dbError);
     alert('Error al guardar publicación: ' + dbError.message);
     return;
   }
@@ -313,34 +281,19 @@ async function loadFeedFromSupabase() {
       <article class="bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-brand-500/20 shadow-2xl overflow-hidden animate-fade-in">
         <div class="p-4 flex items-center justify-between bg-slate-950/40">
           <div class="flex items-center gap-3">
-            <img
-              src="${avatar}"
-              alt="${post.perfiles.nombre_perro}"
-              class="w-11 h-11 rounded-full object-cover ring-2 ring-brand-500"
-            >
+            <img src="${avatar}" alt="${post.perfiles.nombre_perro}" class="w-11 h-11 rounded-full object-cover ring-2 ring-brand-500">
             <div>
-              <h3 class="text-sm font-black text-white leading-tight">
-                ${post.perfiles.nombre_perro}
-              </h3>
-              <p class="text-xs text-brand-300 font-semibold">
-                ${post.perfiles.username} • ${post.perfiles.raza}
-              </p>
+              <h3 class="text-sm font-black text-white leading-tight">${post.perfiles.nombre_perro}</h3>
+              <p class="text-xs text-brand-300 font-semibold">${post.perfiles.username} • ${post.perfiles.raza}</p>
             </div>
           </div>
         </div>
-
         <div class="relative aspect-square bg-slate-950">
-          <img
-            src="${post.foto_url}"
-            alt="Foto de ${post.perfiles.nombre_perro}"
-            class="w-full h-full object-cover"
-          >
+          <img src="${post.foto_url}" alt="Foto de ${post.perfiles.nombre_perro}" class="w-full h-full object-cover">
         </div>
-
         <div class="p-5 space-y-3">
           <p class="text-sm text-slate-200 font-medium leading-relaxed">
-            <strong class="text-mint-400">${post.perfiles.username}:</strong>
-            ${post.comentario || ''}
+            <strong class="text-mint-400">${post.perfiles.username}:</strong> ${post.comentario || ''}
           </p>
         </div>
       </article>
@@ -360,22 +313,13 @@ function updateProfileUI() {
     currentProfile.avatar_url ||
     'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=300&auto=format&fit=crop&q=80';
 
-  document.getElementById('user-dog-name').innerText =
-    currentProfile.nombre_perro;
-
-  document.getElementById('user-dog-username').innerText =
-    currentProfile.username;
-
-  document.getElementById('user-dog-breed').innerText =
-    currentProfile.raza;
-
+  document.getElementById('user-dog-name').innerText = currentProfile.nombre_perro;
+  document.getElementById('user-dog-username').innerText = currentProfile.username;
+  document.getElementById('user-dog-breed').innerText = currentProfile.raza;
   document.getElementById('header-avatar').src = avatar;
-  document.getElementById('header-username').innerText =
-    currentProfile.username;
-
+  document.getElementById('header-username').innerText = currentProfile.username;
   document.getElementById('user-profile-img').src = avatar;
-  document.getElementById('daily-count-num').innerText =
-    currentProfile.dailyPhotosCount;
+  document.getElementById('daily-count-num').innerText = currentProfile.dailyPhotosCount;
 
   const uploadBox = document.getElementById('upload-box');
   const blockedMsg = document.getElementById('upload-blocked-msg');
@@ -404,14 +348,12 @@ function switchTab(tabId) {
 
     if (sec === tabId) {
       el.classList.remove('hidden');
-
       if (nav) {
         nav.className =
           'w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-extrabold text-sm shadow-lg shadow-brand-600/30 transition';
       }
     } else {
       el.classList.add('hidden');
-
       if (nav) {
         nav.className =
           'w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-300 hover:bg-brand-500/10 hover:text-white font-bold text-sm transition';
@@ -429,33 +371,25 @@ function switchAuthTab(type) {
   if (type === 'login') {
     tabLogin.className =
       'flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md transition';
-
     tabReg.className =
       'flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white transition';
-
     formLogin.classList.remove('hidden');
     formReg.classList.add('hidden');
   } else {
     tabReg.className =
       'flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md transition';
-
     tabLogin.className =
       'flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white transition';
-
     formReg.classList.remove('hidden');
     formLogin.classList.add('hidden');
   }
 }
 
-// ==================== INVITADO ====================
 function guestAccess() {
   document.getElementById('auth-screen').classList.add('hidden');
   switchTab('muro');
 }
 
-// ==================== DONACIONES ====================
 function donateMercadoPago(monto) {
-  alert(
-    `Redirigiendo a MercadoPago por $${monto.toLocaleString('es-CL')} CLP...`
-  );
+  alert(`Redirigiendo a MercadoPago por $${monto.toLocaleString('es-CL')} CLP...`);
 }
