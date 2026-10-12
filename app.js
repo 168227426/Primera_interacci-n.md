@@ -2,6 +2,9 @@
 const SUPABASE_URL = 'https://rymtixdqswlxvmtjbkiw.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gS1AcjFnUXrkvs7zSJS6CA_13c3NwDk';
 
+// Forma segura de inicializar si usas el CDN de Supabase en el HTML
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
