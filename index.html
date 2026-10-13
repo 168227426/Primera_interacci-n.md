@@ -1,658 +1,644 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FotoDog - La Comunidad Social de Mascotas</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 500: '#f59e0b', 600: '#d97706' }, // Ámbar vibrante
-            mint: { 400: '#34d399' }
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniFace - Red Social</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
         }
-      }
-    }
-  </script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Supabase JS Client UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        /* Custom scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-brand-500 selection:text-white">
+<body class="min-h-screen text-gray-800 flex flex-col">
 
-  <!-- ==================== PANTALLA DE AUTENTICACIÓN ==================== -->
-  <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-brand-500/30 w-full max-w-md rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-      <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl"></div>
-      
-      <div class="text-center mb-6">
-        <h1 class="text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2">
-          🐾 FotoDog <span class="text-xs bg-brand-500/20 text-brand-400 px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">Cupo Limitado: 10K</span>
-        </h1>
-        <p class="text-slate-400 text-sm mt-1">La red social exclusiva para consentidos de cuatro patas.</p>
-      </div>
-
-      <!-- Pestañas Auth -->
-      <div class="flex bg-slate-950 p-1.5 rounded-2xl mb-6 border border-slate-800">
-        <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-sm shadow-md transition">Ingresar</button>
-        <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold text-sm transition">Crear Cuenta</button>
-      </div>
-
-      <!-- Formulario Login -->
-      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Correo Electrónico</label>
-          <input type="email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Contraseña</label>
-          <input type="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
-        </div>
-        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition">Iniciar Sesión</button>
-      </form>
-
-      <!-- Formulario Registro -->
-      <form id="form-register" onsubmit="handleRegister(event)" class="space-y-3.5 hidden">
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre de la Mascota</label>
-          <input id="reg-dog-name" type="text" required placeholder="Ej. Firulais" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Usuario (@alias)</label>
-          <input id="reg-username" type="text" required placeholder="Ej. @firulais_cl" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Raza o Estilo</label>
-          <input id="reg-breed" type="text" required placeholder="Ej. Golden Retriever" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Correo Electrónico (Humano)</label>
-          <input id="reg-email" type="email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Contraseña</label>
-          <input id="reg-password" type="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none transition">
-        </div>
-        <button type="submit" class="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition mt-2">Registrar mi Perrito</button>
-      </form>
-
-      <div class="mt-6 text-center">
-        <button onclick="guestAccess()" class="text-xs text-slate-400 hover:text-brand-400 underline font-semibold transition">Explorar como invitado</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== LAYOUT PRINCIPAL ==================== -->
-  <div class="max-w-7xl mx-auto flex min-h-screen">
-    
-    <!-- Barra Lateral Izquierda (Navegación) -->
-    <aside class="w-72 border-r border-slate-800/80 p-6 hidden md:flex flex-col justify-between sticky top-0 h-screen">
-      <div class="space-y-8">
-        <div class="flex items-center gap-3 px-2">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-amber-600 flex items-center justify-center shadow-lg shadow-brand-500/20 text-white font-black text-xl">🐶</div>
-          <div>
-            <h2 class="text-lg font-black tracking-wider text-white">FOTODOG</h2>
-            <p class="text-xs text-brand-400 font-semibold">Comunidad Social 🐾</p>
-          </div>
-        </div>
-
-        <nav class="space-y-2">
-          <button id="nav-muro" onclick="switchTab('muro')" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-amber-600 text-white font-extrabold text-sm shadow-lg shadow-brand-600/30 transition">
-            <i data-lucide="image" class="w-5 h-5"></i> Muro de Momentos
-          </button>
-          <button id="nav-vip" onclick="switchTab('vip')" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-300 hover:bg-brand-500/10 hover:text-white font-bold text-sm transition">
-            <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i> Socios VIP & Patrocinio
-          </button>
-          <button id="nav-profile" onclick="switchTab('profile')" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-300 hover:bg-brand-500/10 hover:text-white font-bold text-sm transition">
-            <i data-lucide="user" class="w-5 h-5"></i> Mi Perfil Canino
-          </button>
-        </nav>
-      </div>
-
-      <!-- Tarjeta inferior de Perfil / Logout -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
-        <div class="flex items-center gap-3 overflow-hidden">
-          <img id="header-avatar" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-full object-cover ring-2 ring-brand-500">
-          <div class="truncate">
-            <p id="header-username" class="text-xs font-black text-white truncate">Invitado</p>
-            <p class="text-[10px] text-mint-400 font-semibold">● En Línea</p>
-          </div>
-        </div>
-        <button onclick="logout()" title="Cerrar Sesión" class="p-2 text-slate-400 hover:text-red-400 transition">
-          <i data-lucide="log-out" class="w-5 h-5"></i>
-        </button>
-      </div>
-    </aside>
-
-    <!-- Contenido Central -->
-    <main class="flex-1 max-w-2xl mx-auto px-4 py-8 space-y-8 pb-24 md:pb-8">
-
-      <!-- ==================== SECCIÓN MURO / FEED ==================== -->
-      <section id="sec-muro" class="space-y-6">
+    <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://rymtixdqswlxvmtjbkiw.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_gS1AcjFnUXrkvs7zSJS6CA_13c3NwDk';
         
-        <!-- Caja para publicar foto (Estilo Fotolog/Instagram moderno) -->
-        <div class="bg-slate-900/80 backdrop-blur-xl border border-brand-500/20 rounded-3xl p-6 shadow-2xl space-y-4">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 font-bold text-xs">📸</div>
-            <h2 class="text-sm font-black uppercase tracking-wider text-white">Publica el momento de tu mascota</h2>
-          </div>
-          
-          <div id="upload-blocked-msg" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs p-3 rounded-xl font-bold text-center">
-            ⚠️ Has alcanzado tu límite diario de publicaciones. ¡Vuelve mañana!
-          </div>
-
-          <div id="upload-box" class="space-y-4">
-            <textarea id="photo-caption" rows="2" placeholder="Escribe algo divertido sobre esta foto..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm text-slate-200 placeholder-slate-500 focus:border-brand-500 focus:outline-none transition"></textarea>
-            
-            <div class="flex items-center justify-between pt-2">
-              <label class="cursor-pointer bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition">
-                <i data-lucide="upload" class="w-4 h-4 text-brand-400"></i> Seleccionar Imagen
-                <input id="photo-input" type="file" accept="image/*" onchange="previewSelectedImage(event)" class="hidden">
-              </label>
-
-              <button onclick="uploadDailyPhoto()" class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-amber-500 hover:from-brand-500 hover:to-brand-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-brand-600/30 transition">
-                Publicar Ahora
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Contenedor del Feed Dinámico -->
-        <div id="muro-feed" class="space-y-6">
-          <!-- Las publicaciones se inyectarán aquí dinámicamente -->
-        </div>
-      </section>
-
-      <!-- ==================== SECCIÓN SOCIOS VIP & RENTABILIDAD ==================== -->
-      <section id="sec-vip" class="space-y-6 hidden">
-        <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-brand-500/30 rounded-3xl p-8 shadow-2xl relative overflow-hidden text-center space-y-4">
-          <div class="w-16 h-16 bg-brand-500/20 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-inner">👑</div>
-          <h2 class="text-2xl font-black text-white">Membresía VIP FotoDog</h2>
-          <p class="text-slate-300 text-sm max-w-md mx-auto">Apoya el mantenimiento de la comunidad (límite de 10,000 socios) y desbloquea insignias doradas, subida ilimitada de fotos y prioridad en el muro general.</p>
-          
-          <div class="pt-4 flex flex-col sm:flex-row justify-center gap-4">
-            <button onclick="donateMercadoPago(3990)" class="px-6 py-3.5 bg-gradient-to-r from-brand-600 to-amber-500 text-white font-extrabold text-sm rounded-xl shadow-xl shadow-brand-600/20 hover:scale-105 transition">
-              ⭐ Patrocinio Mensual ($3.990 CLP)
-            </button>
-            <button onclick="donateMercadoPago(9990)" class="px-6 py-3.5 bg-slate-950 border border-brand-500 text-brand-400 font-extrabold text-sm rounded-xl hover:bg-brand-500/10 hover:scale-105 transition">
-              💎 Insignia Dorada Vitalicia ($9.990 CLP)
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== SECCIÓN PERFIL ==================== -->
-      <section id="sec-profile" class="space-y-6 hidden">
-        <div class="bg-slate-900/80 backdrop-blur-xl border border-brand-500/20 rounded-3xl p-8 shadow-2xl space-y-6">
-          <div class="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-            <img id="user-profile-img" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=300&auto=format&fit=crop&q=80" class="w-24 h-24 rounded-full object-cover ring-4 ring-brand-500 shadow-xl">
-            <div class="space-y-1">
-              <h2 id="user-dog-name" class="text-2xl font-black text-white">Cargando...</h2>
-              <p id="user-dog-username" class="text-brand-400 font-bold text-sm">@usuario</p>
-              <p id="user-dog-breed" class="text-slate-400 text-xs font-semibold">Raza: Cargando...</p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
-            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/60 text-center">
-              <p class="text-xs text-slate-400 font-bold uppercase">Publicaciones Hoy</p>
-              <p id="daily-count-num" class="text-2xl font-black text-white mt-1">0 / 2</p>
-            </div>
-            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/60 text-center">
-              <p class="text-xs text-slate-400 font-bold uppercase">Estado de Cuenta</p>
-              <p class="text-sm font-black text-mint-400 mt-2">Socio Verificado 🐾</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <!-- Barra de Navegación Inferior (Móvil) -->
-  <div class="md:hidden fixed bottom-0 inset-x-0 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800 p-3 flex justify-around items-center z-40">
-    <button onclick="switchTab('muro')" class="p-3 text-brand-400"><i data-lucide="image" class="w-6 h-6"></i></button>
-    <button onclick="switchTab('vip')" class="p-3 text-slate-400"><i data-lucide="crown" class="w-6 h-6"></i></button>
-    <button onclick="switchTab('profile')" class="p-3 text-slate-400"><i data-lucide="user" class="w-6 h-6"></i></button>
-  </div>
-
-  <!-- ==================== JAVASCRIPT PRINCIPAL ==================== -->
-  <script>
-    // Configuración de Supabase
-    const SUPABASE_URL = 'https://rymtixdqswlxvmtjbkiw.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_gS1AcjFnUXrkvs7zSJS6CA_13c3NwDk';
-
-    const { createClient } = supabase;
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    let currentSessionUser = null;
-    let currentProfile = null;
-    let selectedImageFile = null;
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      lucide.createIcons();
-      await checkSession();
-      await loadFeedFromSupabase();
-    });
-
-    function fechaLocalHoy() {
-      const ahora = new Date();
-      const offset = ahora.getTimezoneOffset();
-      const fechaLocal = new Date(ahora.getTime() - offset * 60 * 1000);
-      return fechaLocal.toISOString().split('T')[0];
-    }
-
-    // ==================== SESIÓN Y PERFIL ====================
-    async function checkSession() {
-      const { data: { session }, error } = await supabaseClient.auth.getSession();
-      
-      if (session) {
-        currentSessionUser = session.user;
-        await fetchProfile(currentSessionUser.id);
-        document.getElementById('auth-screen').classList.add('hidden');
-        switchTab('muro');
-      } else {
-        document.getElementById('auth-screen').classList.remove('hidden');
-      }
-    }
-
-    async function fetchProfile(userId) {
-      const { data: perfil, error } = await supabaseClient
-        .from('perfiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error al cargar perfil:', error);
-        return;
-      }
-
-      currentProfile = perfil;
-      const hoy = fechaLocalHoy();
-
-      const { count } = await supabaseClient
-        .from('publicaciones')
-        .select('*', { count: 'exact', head: true })
-        .eq('usuario_id', userId)
-        .eq('fecha', hoy);
-
-      currentProfile.dailyPhotosCount = count || 0;
-      updateProfileUI();
-    }
-
-    // ==================== AUTH HANDLERS ====================
-    async function handleLogin(e) {
-      e.preventDefault();
-      const inputs = e.target.querySelectorAll('input');
-      const email = inputs[0].value.trim();
-      const password = inputs[1].value.trim();
-
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        alert('Error al iniciar sesión: ' + error.message);
-        return;
-      }
-
-      currentSessionUser = data.user;
-      await fetchProfile(currentSessionUser.id);
-      document.getElementById('auth-screen').classList.add('hidden');
-      switchTab('muro');
-    }
-
-    async function handleRegister(e) {
-      e.preventDefault();
-      
-      const dogName = document.getElementById('reg-dog-name').value.trim();
-      const usernameInput = document.getElementById('reg-username').value.trim();
-      const breed = document.getElementById('reg-breed').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
-      const password = document.getElementById('reg-password').value.trim();
-
-      const username = usernameInput.startsWith('@') ? usernameInput : '@' + usernameInput;
-
-      const { data, error } = await supabaseClient.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            nombre_perro: dogName,
-            username: username,
-            raza: breed
-          }
-        }
-      });
-
-      if (error) {
-        alert('Error en el registro: ' + error.message);
-        return;
-      }
-
-      alert('¡Perrito registrado con éxito! Ya puedes iniciar sesión.');
-      switchAuthTab('login');
-    }
-
-    async function logout() {
-      await supabaseClient.auth.signOut();
-      currentSessionUser = null;
-      currentProfile = null;
-      selectedImageFile = null;
-      document.getElementById('auth-screen').classList.remove('hidden');
-      switchAuthTab('login');
-    }
-
-    // ==================== PUBLICACIÓN DE FOTOS ====================
-    function previewSelectedImage(event) {
-      const file = event.target.files[0];
-      if (file) selectedImageFile = file;
-    }
-
-    async function uploadDailyPhoto() {
-      if (!currentProfile) {
-        alert('Debes iniciar sesión.');
-        return;
-      }
-
-      if (currentProfile.dailyPhotosCount >= 2) {
-        alert('¡Has alcanzado el límite de 2 fotos para el día de hoy!');
-        return;
-      }
-
-      if (!selectedImageFile) {
-        alert('Por favor selecciona una imagen primero.');
-        return;
-      }
-
-      const caption = document.getElementById('photo-caption').value.trim() || '¡Momento del día!';
-      const fileExt = selectedImageFile.name.split('.').pop();
-      const fileName = `${currentProfile.id}_${Date.now()}.${fileExt}`;
-      const filePath = `muro/${fileName}`;
-
-      const { error: uploadError } = await supabaseClient.storage
-        .from('fotodog-fotos')
-        .upload(filePath, selectedImageFile);
-
-      if (uploadError) {
-        alert('Error al subir imagen: ' + uploadError.message);
-        return;
-      }
-
-      const { data } = supabaseClient.storage
-        .from('fotodog-fotos')
-        .getPublicUrl(filePath);
-
-      const hoy = fechaLocalHoy();
-      const { error: dbError } = await supabaseClient
-        .from('publicaciones')
-        .insert([
-          {
-            usuario_id: currentProfile.id,
-            foto_url: data.publicUrl,
-            comentario: caption,
-            fecha: hoy
-          }
-        ]);
-
-      if (dbError) {
-        alert('Error al guardar publicación: ' + dbError.message);
-        return;
-      }
-
-      alert('¡Foto publicada con éxito!');
-      document.getElementById('photo-caption').value = '';
-      document.getElementById('photo-input').value = '';
-      selectedImageFile = null;
-      await fetchProfile(currentProfile.id);
-      await loadFeedFromSupabase();
-      switchTab('muro');
-    }
-
-    // ==================== CARGAR FEED (LIKES Y COMENTARIOS) ====================
-    async function loadFeedFromSupabase() {
-      // 1. Cargar publicaciones con perfiles
-      const { data: posts, error } = await supabaseClient
-        .from('publicaciones')
-        .select(`
-          id,
-          foto_url,
-          comentario,
-          creado_el,
-          perfiles (
-            id,
-            nombre_perro,
-            username,
-            raza,
-            avatar_url
-          )
-        `)
-        .order('creado_el', { ascending: false });
-
-      if (error) {
-        console.error('Error cargando feed:', error);
-        return;
-      }
-
-      const feedContainer = document.getElementById('muro-feed');
-      feedContainer.innerHTML = '';
-
-      if (!posts || posts.length === 0) {
-        feedContainer.innerHTML = `
-          <div class="bg-slate-900/80 border border-brand-500/20 rounded-3xl p-8 text-center">
-            <p class="text-slate-300 font-bold">Todavía no hay fotos publicadas en el muro.</p>
-          </div>
-        `;
-        return;
-      }
-
-      for (const post of posts) {
-        if (!post.perfiles) continue;
-
-        // Contar likes y verificar si el usuario actual dio like
-        const { count: likesCount } = await supabaseClient
-          .from('likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('publicacion_id', post.id);
-
-        let userLiked = false;
-        if (currentProfile) {
-          const { data: myLike } = await supabaseClient
-            .from('likes')
-            .select('id')
-            .eq('publicacion_id', post.id)
-            .eq('usuario_id', currentProfile.id)
-            .maybeSingle();
-          if (myLike) userLiked = true;
+        let supabaseClient;
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            console.error("Error inicializando Supabase:", e);
         }
 
-        // Cargar comentarios
-        const { data: comments } = await supabaseClient
-          .from('comentarios')
-          .select(`
-            id,
-            contenido,
-            perfiles (
-              username
-            )
-          `)
-          .eq('publicacion_id', post.id)
-          .order('creado_el', { ascending: true });
+        let currentUser = null;
+        let currentView = 'feed'; // 'feed' o 'profile'
+        let profileUserId = null; // ID del perfil visitado
+    </script>
 
-        const avatar = post.perfiles.avatar_url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=150&auto=format&fit=crop&q=80';
+    <!-- AUTHENTICATION VIEW -->
+    <div id="auth-container" class="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 border border-gray-100">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-extrabold text-blue-600 tracking-tight">MiniFace</h1>
+                <p class="text-gray-500 text-sm mt-1">Conéctate con amigos y el mundo en una SPA ligera.</p>
+            </div>
 
-        let commentsHtml = '';
-        if (comments && comments.length > 0) {
-          comments.forEach(c => {
-            if (c.perfiles) {
-              commentsHtml += `<p class="text-xs text-slate-300"><strong class="text-brand-400">${c.perfiles.username}:</strong> ${c.contenido}</p>`;
-            }
-          });
-        }
+            <!-- Tab Switchers -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-center font-semibold text-blue-600 border-b-2 border-blue-600 transition">Iniciar Sesión</button>
+                <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-center font-semibold text-gray-400 border-b-2 border-transparent transition">Registrarse</button>
+            </div>
 
-        const postHtml = `
-          <article class="bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-brand-500/20 shadow-2xl overflow-hidden">
-            <div class="p-4 flex items-center justify-between bg-slate-950/40">
-              <div class="flex items-center gap-3">
-                <img src="${avatar}" class="w-11 h-11 rounded-full object-cover ring-2 ring-brand-500">
-                <div>
-                  <h3 class="text-sm font-black text-white leading-tight">${post.perfiles.nombre_perro}</h3>
-                  <p class="text-xs text-brand-300 font-semibold">${post.perfiles.username} • ${post.perfiles.raza}</p>
+            <!-- Error Banner -->
+            <div id="auth-error" class="hidden mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-xl border border-red-200"></div>
+            <div id="auth-success" class="hidden mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-xl border border-green-200"></div>
+
+            <!-- Form -->
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div id="name-field-container" class="hidden">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Nombre Completo o Usuario</label>
+                    <input type="text" id="auth-name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ej. Juan Pérez">
                 </div>
-              </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Correo Electrónico</label>
+                    <input type="email" id="auth-email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="correo@ejemplo.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Contraseña</label>
+                    <input type="password" id="auth-password" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="••••••••">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition duration-200">Iniciar Sesión</button>
+            </form>
+
+            <div class="mt-6 text-center text-xs text-gray-400">
+                Optimizado para bajo consumo de recursos y máxima fluidez.
             </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="app-container" class="hidden flex flex-col min-h-screen">
+        <!-- TOP NAVIGATION BAR -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+                <!-- Brand & Search -->
+                <div class="flex items-center space-x-4">
+                    <h1 onclick="navigate('feed')" class="text-2xl font-black text-blue-600 cursor-pointer tracking-tight">MiniFace</h1>
+                    <div class="relative hidden sm:block">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" id="global-search" oninput="handleSearch(this.value)" placeholder="Buscar publicaciones o usuarios..." class="pl-9 pr-4 py-1.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-60">
+                    </div>
+                </div>
+
+                <!-- Navigation Controls & Profile Menu -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="navigate('feed')" class="p-2.5 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-full transition" title="Feed Principal">
+                        <i class="fa-solid fa-house text-lg"></i>
+                    </button>
+                    <button onclick="openMyProfile()" class="flex items-center space-x-2 py-1.5 px-3 hover:bg-gray-100 rounded-full transition cursor-pointer">
+                        <img id="nav-user-avatar" src="https://placehold.co/100x100/3b82f6/ffffff?text=U" class="w-8 h-8 rounded-full object-cover border border-gray-300" alt="Avatar">
+                        <span id="nav-user-name" class="font-semibold text-sm hidden md:inline">Mi Perfil</span>
+                    </button>
+                    <button onclick="logout()" class="p-2.5 text-red-500 hover:bg-red-50 rounded-full transition" title="Cerrar Sesión">
+                        <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 max-w-2xl w-full mx-auto px-4 py-6">
             
-            <div class="relative aspect-square bg-slate-950">
-              <img src="${post.foto_url}" class="w-full h-full object-cover">
+            <!-- SQL SETUP HINT BANNER -->
+            <div class="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs text-amber-800 shadow-sm">
+                <div class="flex items-start space-x-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm mt-0.5"></i>
+                    <div>
+                        <span class="font-bold">Nota de Arquitectura / SQL Requerido:</span> Asegúrate de tener creadas las tablas en Supabase (`profiles`, `posts`, `likes`, `comments`) con políticas RLS abiertas para pruebas fluidas. <button onclick="toggleSqlGuide()" class="underline font-semibold ml-1 cursor-pointer">Ver guía SQL</button>
+                    </div>
+                </div>
+                <div id="sql-guide-box" class="hidden mt-3 pt-3 border-t border-amber-200 space-y-2 font-mono text-[11px] bg-white p-3 rounded-xl">
+                    <p class="text-gray-600">Ejecuta esto en tu SQL Editor de Supabase:</p>
+                    <pre class="overflow-x-auto text-gray-800">
+create table if not exists profiles (id uuid primary key, username text, full_name text, avatar_url text);
+create table if not exists posts (id serial primary key, user_id uuid references profiles(id), content text, image_url text, created_at timestamp default now());
+create table if not exists likes (id serial primary key, post_id int references posts(id) on delete cascade, user_id uuid references profiles(id));
+create table if not exists comments (id serial primary key, post_id int references posts(id) on delete cascade, user_id uuid references profiles(id), content text, created_at timestamp default now());
+                    </pre>
+                </div>
             </div>
 
-            <div class="p-5 space-y-4">
-              <div class="flex items-center gap-4">
-                <button onclick="toggleLike('${post.id}')" class="flex items-center gap-1.5 text-xs font-black ${userLiked ? 'text-red-500' : 'text-slate-300'} hover:scale-105 transition">
-                  ❤️ <span>${likesCount || 0}</span> Me gusta
-                </button>
-              </div>
+            <!-- FEED VIEW CONTAINER -->
+            <div id="view-feed" class="space-y-6">
+                <!-- Create Post Box -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+                    <form onsubmit="handleCreatePost(event)" class="space-y-3">
+                        <div class="flex items-start space-x-3">
+                            <img id="post-creator-avatar" src="https://placehold.co/100x100/3b82f6/ffffff?text=U" class="w-10 h-10 rounded-full object-cover border" alt="Avatar">
+                            <textarea id="post-content-input" rows="2" placeholder="¿Qué estás pensando hoy?" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"></textarea>
+                        </div>
+                        <div id="post-image-input-container" class="hidden pl-13">
+                            <input type="url" id="post-image-url" placeholder="URL de la imagen opcional (https://...)" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <button type="button" onclick="toggleImageInput()" class="text-gray-500 hover:text-blue-600 text-sm flex items-center space-x-1.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">
+                                <i class="fa-regular fa-image text-blue-500"></i>
+                                <span class="text-xs font-semibold">Foto / URL</span>
+                            </button>
+                            <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm shadow-sm transition">Publicar</button>
+                        </div>
+                    </form>
+                </div>
 
-              <p class="text-sm text-slate-200 font-medium leading-relaxed">
-                <strong class="text-mint-400">${post.perfiles.username}:</strong> ${post.comentario || ''}
-              </p>
-
-              <!-- Comentarios -->
-              <div class="space-y-1.5 pt-2 border-t border-slate-800/80 max-h-32 overflow-y-auto">
-                ${commentsHtml || '<p class="text-xs text-slate-500 italic">Sin comentarios aún. ¡Sé el primero!</p>'}
-              </div>
-
-              <!-- Input Comentar -->
-              <div class="flex gap-2 pt-2">
-                <input id="comment-input-${post.id}" type="text" placeholder="Escribe un comentario respetuoso..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-brand-500 focus:outline-none">
-                <button onclick="addComment('${post.id}')" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-extrabold transition">Comentar</button>
-              </div>
+                <!-- Feed Stream Container -->
+                <div id="posts-feed-list" class="space-y-4">
+                    <!-- Dinámicamente inyectado -->
+                    <div class="text-center py-10 text-gray-400">
+                        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p class="text-sm">Cargando publicaciones...</p>
+                    </div>
+                </div>
             </div>
-          </article>
-        `;
-        feedContainer.insertAdjacentHTML('beforeend', postHtml);
-      }
-      lucide.createIcons();
-    }
 
-    async function toggleLike(postId) {
-      if (!currentProfile) {
-        alert('Debes iniciar sesión para dar Me Gusta.');
-        return;
-      }
+            <!-- PROFILE VIEW CONTAINER -->
+            <div id="view-profile" class="hidden space-y-6">
+                <!-- Profile Header Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="h-32 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+                    <div class="px-6 pb-6 relative flex flex-col sm:flex-row items-center sm:items-end justify-between -mt-12 space-y-3 sm:space-y-0">
+                        <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 text-center sm:text-left">
+                            <img id="profile-avatar" src="https://placehold.co/150x150/3b82f6/ffffff?text=U" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md bg-white" alt="Avatar">
+                            <div class="pt-2 sm:pt-12">
+                                <h2 id="profile-fullname" class="text-xl font-bold text-gray-800">Nombre de Usuario</h2>
+                                <p id="profile-username" class="text-xs text-gray-500">@usuario</p>
+                            </div>
+                        </div>
+                        <div id="profile-actions">
+                            <!-- Botones opcionales de edición futura -->
+                        </div>
+                    </div>
+                </div>
 
-      const { data: existingLike } = await supabaseClient
-        .from('likes')
-        .select('id')
-        .eq('publicacion_id', postId)
-        .eq('usuario_id', currentProfile.id)
-        .maybeSingle();
+                <!-- User Posts Stream -->
+                <div class="space-y-4">
+                    <h3 class="font-bold text-gray-700 text-sm tracking-wider uppercase px-1">Publicaciones del usuario</h3>
+                    <div id="profile-posts-list" class="space-y-4">
+                        <!-- Dinámicamente inyectado -->
+                    </div>
+                </div>
+            </div>
 
-      if (existingLike) {
-        await supabaseClient.from('likes').delete().eq('id', existingLike.id);
-      } else {
-        await supabaseClient.from('likes').insert([{ publicacion_id: postId, usuario_id: currentProfile.id }]);
-      }
-      await loadFeedFromSupabase();
-    }
+        </main>
+    </div>
 
-    async function addComment(postId) {
-      if (!currentProfile) {
-        alert('Debes iniciar sesión para comentar.');
-        return;
-      }
+    <script>
+        let isLoginTab = true;
 
-      const input = document.getElementById(`comment-input-${postId}`);
-      const text = input.value.trim();
-      if (!text) return;
+        function switchAuthTab(tab) {
+            isLoginTab = (tab === 'login');
+            const loginBtn = document.getElementById('tab-login-btn');
+            const regBtn = document.getElementById('tab-register-btn');
+            const nameContainer = document.getElementById('name-field-container');
+            const submitBtn = document.getElementById('auth-submit-btn');
 
-      const { error } = await supabaseClient
-        .from('comentarios')
-        .insert([{ publicacion_id: postId, usuario_id: currentProfile.id, contenido: text }]);
+            clearAuthMessages();
 
-      if (error) {
-        alert('Error al comentar: ' + error.message);
-        return;
-      }
-
-      input.value = '';
-      await loadFeedFromSupabase();
-    }
-
-    // ==================== UI & NAVEGACIÓN ====================
-    function updateProfileUI() {
-      if (!currentProfile) return;
-      const avatar = currentProfile.avatar_url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=300&auto=format&fit=crop&q=80';
-
-      document.getElementById('user-dog-name').innerText = currentProfile.nombre_perro;
-      document.getElementById('user-dog-username').innerText = currentProfile.username;
-      document.getElementById('user-dog-breed').innerText = currentProfile.raza;
-      document.getElementById('header-avatar').src = avatar;
-      document.getElementById('header-username').innerText = currentProfile.username;
-      document.getElementById('user-profile-img').src = avatar;
-      document.getElementById('daily-count-num').innerText = `${currentProfile.dailyPhotosCount} / 2`;
-
-      if (currentProfile.dailyPhotosCount >= 2) {
-        document.getElementById('upload-box').classList.add('hidden');
-        document.getElementById('upload-blocked-msg').classList.remove('hidden');
-      } else {
-        document.getElementById('upload-box').classList.remove('hidden');
-        document.getElementById('upload-blocked-msg').classList.add('hidden');
-      }
-    }
-
-    function switchTab(tabId) {
-      if (tabId === 'profile' && !currentSessionUser) {
-        document.getElementById('auth-screen').classList.remove('hidden');
-        return;
-      }
-
-      const sections = ['muro', 'vip', 'profile'];
-      sections.forEach(sec => {
-        const el = document.getElementById('sec-' + sec);
-        const nav = document.getElementById('nav-' + sec);
-        if (sec === tabId) {
-          el.classList.remove('hidden');
-          if (nav) nav.className = "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-amber-600 text-white font-extrabold text-sm shadow-lg shadow-brand-600/30 transition";
-        } else {
-          el.classList.add('hidden');
-          if (nav) nav.className = "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-300 hover:bg-brand-500/10 hover:text-white font-bold text-sm transition";
+            if (isLoginTab) {
+                loginBtn.className = "flex-1 pb-3 text-center font-semibold text-blue-600 border-b-2 border-blue-600 transition";
+                regBtn.className = "flex-1 pb-3 text-center font-semibold text-gray-400 border-b-2 border-transparent transition";
+                nameContainer.classList.add('hidden');
+                submitBtn.innerText = "Iniciar Sesión";
+            } else {
+                regBtn.className = "flex-1 pb-3 text-center font-semibold text-blue-600 border-b-2 border-blue-600 transition";
+                loginBtn.className = "flex-1 pb-3 text-center font-semibold text-gray-400 border-b-2 border-transparent transition";
+                nameContainer.classList.remove('hidden');
+                submitBtn.innerText = "Registrarse";
+            }
         }
-      });
-    }
 
-    function switchAuthTab(type) {
-      const tabLogin = document.getElementById('tab-login');
-      const tabReg = document.getElementById('tab-register');
-      const formLogin = document.getElementById('form-login');
-      const formReg = document.getElementById('form-register');
+        function clearAuthMessages() {
+            document.getElementById('auth-error').classList.add('hidden');
+            document.getElementById('auth-success').classList.add('hidden');
+        }
 
-      if (type === 'login') {
-        tabLogin.className = "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md transition";
-        tabReg.className = "flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white transition";
-        formLogin.classList.remove('hidden');
-        formReg.classList.add('hidden');
-      } else {
-        tabReg.className = "flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md transition";
-        tabLogin.className = "flex-1 py-2.5 rounded-xl text-slate-400 hover:text-white transition";
-        formReg.classList.remove('hidden');
-        formLogin.classList.add('hidden');
-      }
-    }
+        function showAuthError(msg) {
+            const el = document.getElementById('auth-error');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
 
-    function guestAccess() {
-      document.getElementById('auth-screen').classList.add('hidden');
-      switchTab('muro');
-    }
+        function showAuthSuccess(msg) {
+            const el = document.getElementById('auth-success');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
 
-    function donateMercadoPago(monto) {
-      alert(`Redirigiendo a pasarela segura para patrocinio VIP de $${monto.toLocaleString('es-CL')} CLP...`);
-    }
-  </script>
+        function toggleSqlGuide() {
+            const box = document.getElementById('sql-guide-box');
+            box.classList.toggle('hidden');
+        }
+
+        function toggleImageInput() {
+            const container = document.getElementById('post-image-input-container');
+            container.classList.toggle('hidden');
+        }
+
+        // Verificar sesión activa al cargar
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!supabaseClient) {
+                showAuthError("Error crítico: Supabase no se pudo inicializar.");
+                return;
+            }
+
+            try {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                if (session && session.user) {
+                    await handleUserSession(session.user);
+                } else {
+                    document.getElementById('auth-container').classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Error al verificar sesión:", err);
+                document.getElementById('auth-container').classList.remove('hidden');
+            }
+        });
+
+        async function handleUserSession(user) {
+            currentUser = user;
+            // Buscar perfil o crearlo si no existe
+            let { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile) {
+                // Crear perfil por defecto
+                const defaultName = user.email.split('@')[0];
+                const newProfile = {
+                    id: user.id,
+                    username: defaultName,
+                    full_name: defaultName,
+                    avatar_url: `https://placehold.co/150x150/3b82f6/ffffff?text=${defaultName.charAt(0).toUpperCase()}`
+                };
+                await supabaseClient.from('profiles').insert([newProfile]);
+                profile = newProfile;
+            }
+
+            currentUser.profile = profile;
+
+            // Actualizar UI navbar
+            document.getElementById('nav-user-avatar').src = profile.avatar_url || 'https://placehold.co/100x100/3b82f6/ffffff?text=U';
+            document.getElementById('nav-user-name').innerText = profile.full_name || profile.username;
+            document.getElementById('post-creator-avatar').src = profile.avatar_url || 'https://placehold.co/100x100/3b82f6/ffffff?text=U';
+
+            // Ocultar auth y mostrar app
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+
+            loadFeed();
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            clearAuthMessages();
+
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const fullName = document.getElementById('auth-name').value;
+
+            if (isLoginTab) {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) {
+                    showAuthError(error.message);
+                } else if (data.session) {
+                    await handleUserSession(data.session.user);
+                }
+            } else {
+                const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                if (error) {
+                    showAuthError(error.message);
+                } else if (data.user) {
+                    // Crear perfil inmediato
+                    const defaultName = fullName || email.split('@')[0];
+                    await supabaseClient.from('profiles').insert([{
+                        id: data.user.id,
+                        username: email.split('@')[0],
+                        full_name: defaultName,
+                        avatar_url: `https://placehold.co/150x150/3b82f6/ffffff?text=${defaultName.charAt(0).toUpperCase()}`
+                    }]);
+                    showAuthSuccess("¡Registro exitoso! Ya puedes iniciar sesión.");
+                    switchAuthTab('login');
+                }
+            }
+        }
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            currentUser = null;
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
+        }
+    </script>
+
+    <script>
+        function navigate(view, id = null) {
+            currentView = view;
+            const feedView = document.getElementById('view-feed');
+            const profileView = document.getElementById('view-profile');
+
+            if (view === 'feed') {
+                feedView.classList.remove('hidden');
+                profileView.classList.add('hidden');
+                loadFeed();
+            } else if (view === 'profile') {
+                feedView.classList.add('hidden');
+                profileView.classList.remove('hidden');
+                profileUserId = id;
+                loadProfile(id);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openMyProfile() {
+            if (currentUser) {
+                navigate('profile', currentUser.id);
+            }
+        }
+
+        async function handleCreatePost(e) {
+            e.preventDefault();
+            const content = document.getElementById('post-content-input').value.trim();
+            const imageUrl = document.getElementById('post-image-url').value.trim();
+
+            if (!content && !imageUrl) return;
+
+            const { error } = await supabaseClient.from('posts').insert([{
+                user_id: currentUser.id,
+                content: content,
+                image_url: imageUrl || null
+            }]);
+
+            if (error) {
+                alert("Error al publicar: " + error.message);
+            } else {
+                document.getElementById('post-content-input').value = '';
+                document.getElementById('post-image-url').value = '';
+                document.getElementById('post-image-input-container').classList.add('hidden');
+                loadFeed();
+            }
+        }
+
+        async function loadFeed() {
+            const feedList = document.getElementById('posts-feed-list');
+            feedList.innerHTML = `<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl mb-1"></i><p class="text-xs">Actualizando feed...</p></div>`;
+
+            // Consultar posts con perfiles y conteos
+            const { data: posts, error } = await supabaseClient
+                .from('posts')
+                .select(`
+                    *,
+                    profiles:user_id (id, username, full_name, avatar_url)
+                `)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) {
+                feedList.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-xl text-center text-sm">Error cargando publicaciones: ${error.message}</div>`;
+                return;
+            }
+
+            if (!posts || posts.length === 0) {
+                feedList.innerHTML = `<div class="text-center py-12 bg-white rounded-2xl border border-gray-200 text-gray-400"><i class="fa-regular fa-comment-dots text-3xl mb-2"></i><p class="text-sm">No hay publicaciones aún. ¡Sé el primero en compartir algo!</p></div>`;
+                return;
+            }
+
+            renderPostsHTML(posts, feedList);
+        }
+
+        async function loadProfile(userId) {
+            const profilePostsList = document.getElementById('profile-posts-list');
+            profilePostsList.innerHTML = `<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>`;
+
+            // Obtener perfil
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (profile) {
+                document.getElementById('profile-fullname').innerText = profile.full_name;
+                document.getElementById('profile-username').innerText = '@' + profile.username;
+                document.getElementById('profile-avatar').src = profile.avatar_url || 'https://placehold.co/150x150/3b82f6/ffffff?text=U';
+            }
+
+            // Obtener posts del usuario
+            const { data: posts, error } = await supabaseClient
+                .from('posts')
+                .select(`
+                    *,
+                    profiles:user_id (id, username, full_name, avatar_url)
+                `)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error || !posts || posts.length === 0) {
+                profilePostsList.innerHTML = `<div class="text-center py-8 bg-white rounded-2xl border border-gray-200 text-gray-400 text-sm">Este usuario no tiene publicaciones.</div>`;
+                return;
+            }
+
+            renderPostsHTML(posts, profilePostsList);
+        }
+
+        async function renderPostsHTML(posts, container) {
+            container.innerHTML = '';
+
+            for (let post of posts) {
+                // Obtener likes y comentarios para cada post de forma ligera
+                const { count: likesCount } = await supabaseClient
+                    .from('likes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('post_id', post.id);
+
+                const { data: myLike } = await supabaseClient
+                    .from('likes')
+                    .select('id')
+                    .eq('post_id', post.id)
+                    .eq('user_id', currentUser.id)
+                    .maybeSingle();
+
+                const { data: comments } = await supabaseClient
+                    .from('comments')
+                    .select(`
+                        *,
+                        profiles:user_id (id, username, full_name, avatar_url)
+                    `)
+                    .eq('post_id', post.id)
+                    .order('created_at', { ascending: true });
+
+                const isLiked = !!myLike;
+                const author = post.profiles || { full_name: 'Usuario', username: 'user', avatar_url: 'https://placehold.co/100x100/3b82f6/ffffff?text=U' };
+                const timeAgo = timeSince(new Date(post.created_at));
+
+                const postCard = document.createElement('div');
+                postCard.className = "bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden";
+                postCard.innerHTML = `
+                    <!-- Post Header -->
+                    <div class="p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('profile', '${post.user_id}')">
+                            <img src="${author.avatar_url || 'https://placehold.co/100x100/3b82f6/ffffff?text=U'}" class="w-10 h-10 rounded-full object-cover border" alt="Avatar">
+                            <div>
+                                <h4 class="font-semibold text-sm text-gray-800 hover:underline">${author.full_name}</h4>
+                                <span class="text-xs text-gray-400">${timeAgo}</span>
+                            </div>
+                        </div>
+                        ${post.user_id === currentUser.id ? `<button onclick="deletePost(${post.id})" class="text-gray-400 hover:text-red-500 text-xs p-2 transition" title="Eliminar publicación"><i class="fa-solid fa-trash"></i></button>` : ''}
+                    </div>
+
+                    <!-- Post Content -->
+                    ${post.content ? `<div class="px-4 pb-3 text-sm text-gray-700 whitespace-pre-line">${escapeHTML(post.content)}</div>` : ''}
+
+                    <!-- Post Image -->
+                    ${post.image_url ? `<div class="w-full bg-gray-100 max-h-96 overflow-hidden flex items-center justify-center"><img src="${escapeHTML(post.image_url)}" class="w-full object-cover" onerror="this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Imagen+No+Disponible'"></div>` : ''}
+
+                    <!-- Post Metrics Bar -->
+                    <div class="px-4 py-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                        <span><strong class="text-gray-700">${likesCount || 0}</strong> Me gusta</span>
+                        <span><strong class="text-gray-700">${comments ? comments.length : 0}</strong> Comentarios</span>
+                    </div>
+
+                    <!-- Action Buttons Bar -->
+                    <div class="px-2 py-1 border-t border-gray-100 flex items-center justify-between">
+                        <button onclick="toggleLike(${post.id}, ${isLiked})" class="flex-1 py-2 text-center text-xs font-semibold rounded-xl hover:bg-gray-100 transition ${isLiked ? 'text-blue-600' : 'text-gray-600'}">
+                            <i class="${isLiked ? 'fa-solid' : 'fa-regular'} fa-thumbs-up mr-1.5 text-sm"></i> Me gusta
+                        </button>
+                        <button onclick="document.getElementById('comment-input-${post.id}').focus()" class="flex-1 py-2 text-center text-xs font-semibold text-gray-600 rounded-xl hover:bg-gray-100 transition">
+                            <i class="fa-regular fa-comment mr-1.5 text-sm"></i> Comentar
+                        </button>
+                    </div>
+
+                    <!-- Comments Section -->
+                    <div class="bg-gray-50 px-4 py-3 border-t border-gray-100 space-y-3">
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            ${comments && comments.length > 0 ? comments.map(c => {
+                                const cAuthor = c.profiles || { full_name: 'Usuario', avatar_url: 'https://placehold.co/100x100/3b82f6/ffffff?text=U' };
+                                return `
+                                    <div class="flex items-start space-x-2 text-xs">
+                                        <img src="${cAuthor.avatar_url}" class="w-7 h-7 rounded-full object-cover border mt-0.5" alt="Avatar">
+                                        <div class="flex-1 bg-white p-2.5 rounded-xl border border-gray-200 shadow-2xs">
+                                            <span class="font-bold text-gray-800 block">${cAuthor.full_name}</span>
+                                            <span class="text-gray-600">${escapeHTML(c.content)}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('') : `<p class="text-xs text-gray-400 text-center py-1">Sin comentarios aún.</p>`}
+                        </div>
+
+                        <!-- Add Comment Input -->
+                        <form onsubmit="handleAddComment(event, ${post.id})" class="flex items-center space-x-2 pt-1">
+                            <input type="text" id="comment-input-${post.id}" placeholder="Escribe un comentario..." class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="submit" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition"><i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </div>
+                `;
+                container.appendChild(postCard);
+            }
+        }
+
+        async function toggleLike(postId, isLiked) {
+            if (isLiked) {
+                await supabaseClient
+                    .from('likes')
+                    .delete()
+                    .eq('post_id', postId)
+                    .eq('user_id', currentUser.id);
+            } else {
+                await supabaseClient
+                    .from('likes')
+                    .insert([{ post_id: postId, user_id: currentUser.id }]);
+            }
+            refreshCurrentView();
+        }
+
+        async function handleAddComment(e, postId) {
+            e.preventDefault();
+            const input = document.getElementById(`comment-input-${postId}`);
+            const content = input.value.trim();
+
+            if (!content) return;
+
+            const { error } = await supabaseClient.from('comments').insert([{
+                post_id: postId,
+                user_id: currentUser.id,
+                content: content
+            }]);
+
+            if (!error) {
+                input.value = '';
+                refreshCurrentView();
+            }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm("¿Deseas eliminar esta publicación?")) return;
+            const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
+            if (!error) {
+                refreshCurrentView();
+            }
+        }
+
+        function refreshCurrentView() {
+            if (currentView === 'feed') {
+                loadFeed();
+            } else {
+                loadProfile(profileUserId);
+            }
+        }
+
+        function handleSearch(query) {
+            // Buscador simple en memoria del feed actual si se desea expandir
+            // Funcionalidad ligera para ahorrar recursos
+        }
+
+        function timeSince(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " años";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " meses";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " días";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + "h";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + "m";
+            return "Hace un momento";
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
 </body>
 </html>
